@@ -25,7 +25,7 @@ server.on("upgrade", (req: IncomingMessage, socket: Socket) => {
   const key = req.headers["sec-websocket-key"] as string;
   const acceptKey = crypto
     .createHash("sha1")
-    .update(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11", "binary")
+    .update(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11", "binary") // magic
     .digest("base64");
 
   socket.write("HTTP/1.1 101 Switching Protocols\r\n");
@@ -45,7 +45,7 @@ server.on("upgrade", (req: IncomingMessage, socket: Socket) => {
                                      // handled in websocket implementation
     }
     const selection = parseInt(message);
-    // yes im also using a switch case to handle then
+    // yes im also using a switch case to handle them
     switch (selection) {
       case 1:
         resp =
@@ -89,7 +89,7 @@ server.on("upgrade", (req: IncomingMessage, socket: Socket) => {
     console.log("Client disconnected");
   });
 
-  socket.on("error", () => null);
+  socket.on("error", () => null); // yes we ignore errors as sudden disconnect throws an error as well
 });
 
 server.listen(3000, () => {
