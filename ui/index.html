@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ShellTear</title>
+    <style>
+      :root {
+        --bg: #000000;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        font-family: monospace;
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        color: #00ff00;
+        font-family: monospace;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        flex-direction: column;
+        background: var(--bg);
+      }
+
+      #container {
+        text-align: center;
+      }
+
+      #terminal {
+        background-color: #000000;
+        border-radius: 20px;
+        padding: 40px;
+        width: 600px;
+        text-align: left;
+        overflow-y: scroll;
+        max-height: 400px;
+        font-weight: lighter;
+        box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+        margin-bottom: 20px;
+        white-space: pre-wrap;
+        position: relative;
+        align-items: center;
+      }
+
+      input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        border: none;
+        background-color: #000000;
+        color: #00ff00;
+        border-radius: 10px;
+        box-sizing: border-box;
+        box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+      }
+
+      canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: -1;
+      }
+
+      .glitch {
+        animation: textGlitch 4s ease-in-out infinite alternate;
+      }
+
+      @keyframes textGlitch {
+        0% {
+          opacity: 1;
+        }
+
+        94% {
+          opacity: 1;
+          transform: translateX(0px);
+        }
+
+        95% {
+          opacity: 0.1;
+        }
+
+        96% {
+          opacity: 1;
+          transform: translateX(1px);
+        }
+
+        97% {
+          opacity: 0.1;
+        }
+
+        100% {
+          opacity: 1;
+          transform: translateX(0px);
+        }
+      }
+
+      @media only screen and (max-width: 600px) {
+        #terminal {
+          width: 90%;
+          height: 90%;
+          margin: auto;
+          align-items: center;
+          font-size: 14px; 
+        }
+
+        input {
+          width: 90%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="space"></canvas>
+    <div id="container">
+      <div id="terminal"></div>
+      <input type="text" id="commandInput" placeholder="Type your command..." />
+    </div>
+    <script>
+      const terminal = document.getElementById("terminal");
+      const commandInput = document.getElementById("commandInput");
+      const socket = new WebSocket("ws://localhost:3000");
+      let messageCache = [];
+      let cachePrintTimeout;
+      const cachePrintInterval = 400;
+      socket.addEventListener("message", ({ data }) => appendMessage(data));
+      commandInput.addEventListener("keyup", (event) => {
+        if (event.key === "Enter") {
+          const command = commandInput.value;
+          socket.send(command);
+          commandInput.value = "";
+        }
+      });
+      const appendMessage = (message) => {
+        terminal.scrollTop = terminal.scrollHeight;
+        messageCache.push((message.startsWith("\r\n") ? message.slice(1, message.length) + "\n": message));
+        clearTimeout(cachePrintTimeout);
+        cachePrintTimeout = setTimeout(
+          () => printCachedMessages(),
+          cachePrintInterval
+        );
+      };
+      const printCachedMessages = () => {
+        terminal.innerHTML = "";
+        const concatenatedMessages = messageCache.join("");
+        const newLine = document.createElement("div");
+        newLine.setAttribute("class", "glitch");
+
+        newLine.textContent = concatenatedMessages;
+        terminal.appendChild(newLine);
+
+        messageCache = [];
+        terminal.scrollTop = terminal.scrollHeight;
+      };
+      window.requestAnimFrame = (() => {
+        return window.requestAnimationFrame;
+      })();
+      const canvas = document.getElementById("space");
+      const c = canvas.getContext("2d");
+      const numStars = 1900;
+      const radius = "0." + Math.floor(Math.random() * 9) + 1;
+      const focalLength = canvas.width * 2;
+      let centerX, centerY;
+      let stars = [],
+        star,
+        i;
+      const animate = true;
+      const executeFrame = () => {
+        if (animate) requestAnimFrame(executeFrame);
+        moveStars();
+        drawStars();
+      };
+      const initializeStars = () => {
+        centerX = canvas.width / 2;
+        centerY = canvas.height / 2;
+        stars = [];
+        for (i = 0; i < numStars; i++) {
+          star = {
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            z: Math.random() * canvas.width,
+            o: "0." + Math.floor(Math.random() * 99) + 1,
+          };
+          stars.push(star);
+        }
+      };
+      initializeStars();
+      const drawStars = () => {
+        let pixelX, pixelY, pixelRadius;
+        if (
+          canvas.width !== window.innerWidth ||
+          canvas.width !== window.innerWidth
+        ) {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+          initializeStars();
+        }
+        c.fillStyle = "rgba(0,0,0,1)";
+        c.fillRect(0, 0, canvas.width, canvas.height);
+        c.fillStyle = `rgba(209, 255, 255, ${radius})`;
+        for (const star of stars) {
+          pixelX = (star.x - centerX) * (focalLength / star.z);
+          pixelX += centerX;
+          pixelY = (star.y - centerY) * (focalLength / star.z);
+          pixelY += centerY;
+          pixelRadius = 1 * (focalLength / star.z);
+          c.fillRect(pixelX, pixelY, pixelRadius, pixelRadius);
+          c.fillStyle = `rgba(209, 255, 255, ${star.o})`;
+        }
+      };
+      const moveStars = () => {
+        for (i = 0; i < numStars; i++) {
+          star = stars[i];
+          star.z--;
+          if (star.z <= 0) {
+            star.z = canvas.width;
+          }
+        }
+      };
+      executeFrame();
+    </script>
+  </body>
+</html>

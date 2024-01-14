@@ -1,0 +1,14 @@
+{
+  "name": "site",
+  "version": "1.0.0",
+  "description": "my site",
+  "main": "main.js",
+  "scripts": {
+    "start": "tsc main.ts && node main"
+  },
+  "author": "shelltear",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.11.0"
+  }
+}
